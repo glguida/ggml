@@ -2169,7 +2169,11 @@ ggml_backend_sched_t ggml_backend_sched_new(
 
     struct ggml_backend_sched * sched = (ggml_backend_sched *) calloc(1, sizeof(struct ggml_backend_sched));
 
+#ifdef _EC_SOURCE
+    sched->debug = false;
+#else
     sched->debug = getenv("GGML_SCHED_DEBUG") != NULL;
+#endif
     sched->n_backends = n_backends;
     sched->n_copies = parallel ? GGML_SCHED_MAX_COPIES : 1;
 

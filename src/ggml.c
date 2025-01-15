@@ -176,9 +176,11 @@ static int sched_yield (void) {
 
 typedef void * thread_ret_t;
 
+#ifndef _EC_SOURCE
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#endif
 
 #endif
 
@@ -612,6 +614,7 @@ bool ggml_guid_matches(ggml_guid_t guid_a, ggml_guid_t guid_b) {
 // timing
 //
 
+#ifndef _EC_SOURCE
 #if defined(_MSC_VER) || defined(__MINGW32__)
 static int64_t timer_freq, timer_start;
 void ggml_time_init(void) {
@@ -657,6 +660,16 @@ int64_t ggml_cycles(void) {
 int64_t ggml_cycles_per_ms(void) {
     return CLOCKS_PER_SEC/1000;
 }
+#else /* _EC_SOURCE */
+
+void ggml_time_init (void);
+int64_t ggml_time_ms (void);
+int64_t ggml_time_us (void);
+int64_t ggml_cycles(void);
+int64_t ggml_cycles_per_ms(void);
+
+
+#endif /* _EC_SOURCE */
 
 //
 // cross-platform UTF-8 file paths
@@ -681,6 +694,8 @@ static wchar_t * ggml_mbstowcs(const char * mbs) {
     return wbuf;
 }
 #endif
+
+#ifndef _EC_SOURCE
 
 FILE * ggml_fopen(const char * fname, const char * mode) {
 #ifdef _WIN32
@@ -708,6 +723,8 @@ FILE * ggml_fopen(const char * fname, const char * mode) {
     return fopen(fname, mode);
 #endif
 }
+
+#endif
 
 //
 // cache line
@@ -20226,6 +20243,8 @@ struct ggml_tensor * ggml_graph_get_tensor(struct ggml_cgraph * cgraph, const ch
     return NULL;
 }
 
+#ifndef _EC_SOURCE
+
 static void ggml_graph_export_leaf(const struct ggml_tensor * tensor, FILE * fout) {
     const int64_t * ne = tensor->ne;
     const size_t  * nb = tensor->nb;
@@ -20711,6 +20730,8 @@ struct ggml_cgraph * ggml_graph_import(const char * fname, struct ggml_context *
     return result;
 }
 
+#endif /* _EC_SOURCE */
+
 void ggml_graph_print(const struct ggml_cgraph * cgraph) {
     GGML_LOG_INFO("=== GRAPH ===\n");
 
@@ -20764,6 +20785,8 @@ static struct ggml_tensor * ggml_graph_get_parent(const struct ggml_cgraph * cgr
 
     return NULL;
 }
+
+#ifndef _EC_SOURCE
 
 static void ggml_graph_dump_dot_node_edge(FILE * fp, const struct ggml_cgraph * gb, struct ggml_tensor * node, struct ggml_tensor * parent, const char * label)  {
     struct ggml_tensor * gparent = ggml_graph_get_parent(gb, node);
@@ -20908,6 +20931,8 @@ void ggml_graph_dump_dot(const struct ggml_cgraph * gb, const struct ggml_cgraph
 
     GGML_LOG_INFO("%s: dot -Tpng %s -o %s.png && open %s.png\n", __func__, filename, filename, filename);
 }
+
+#endif /* _EC_SOURCE */
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -21808,6 +21833,7 @@ enum ggml_opt_result ggml_opt_resume_g(
             } break;
     }
 
+#ifndef _EC_SOURCE
     if (opt->params.print_forward_graph) {
         ggml_graph_print   (gf);
         ggml_graph_dump_dot(gf, NULL, "opt-forward.dot");
@@ -21817,6 +21843,7 @@ enum ggml_opt_result ggml_opt_resume_g(
         ggml_graph_print   (gb);
         ggml_graph_dump_dot(gb, gf, "opt-backward.dot");
     }
+#endif
 
     return result;
 }
@@ -22084,6 +22111,8 @@ static void gguf_tensor_info_sanitize(struct gguf_tensor_info * info) {
     GGML_ASSERT(INT64_MAX/info->ne[3] > info->ne[0]*info->ne[1]*info->ne[2]);
 }
 
+#ifndef _EC_SOURCE
+
 static bool gguf_fread_el(FILE * file, void * dst, size_t size, size_t * offset) {
     const size_t n = fread(dst, 1, size, file);
     *offset += n;
@@ -22110,6 +22139,8 @@ static bool gguf_fread_str(FILE * file, struct gguf_str * p, size_t * offset) {
 
     return ok;
 }
+
+#endif /* _EC_SOURCE */
 
 static void gguf_free_kv(struct gguf_kv * kv) {
     if (kv->key.data) {
@@ -22156,6 +22187,8 @@ struct gguf_context * gguf_init_empty(void) {
 
     return ctx;
 }
+
+#ifndef _EC_SOURCE
 
 struct gguf_context * gguf_init_from_file(const char * fname, struct gguf_init_params params) {
     FILE * file = ggml_fopen(fname, "rb");
@@ -22499,6 +22532,8 @@ struct gguf_context * gguf_init_from_file(const char * fname, struct gguf_init_p
 
     return ctx;
 }
+
+#endif
 
 void gguf_free(struct gguf_context * ctx) {
     if (ctx == NULL) {
@@ -23128,6 +23163,8 @@ static void gguf_write_to_buf(const struct gguf_context * ctx, struct gguf_buf *
     }
 }
 
+#ifndef _EC_SOURCE
+
 void gguf_write_to_file(const struct gguf_context * ctx, const char * fname, bool only_meta) {
     FILE * file = ggml_fopen(fname, "wb");
     if (!file) {
@@ -23144,6 +23181,8 @@ void gguf_write_to_file(const struct gguf_context * ctx, const char * fname, boo
 
     fclose(file);
 }
+
+#endif
 
 size_t gguf_get_meta_size(const struct gguf_context * ctx) {
     // no allocs - only compute size
